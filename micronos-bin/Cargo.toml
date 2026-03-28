@@ -1,0 +1,30 @@
+[package]
+name = "micronos"
+version.workspace = true
+authors.workspace = true
+description = "MicronOS - A revolutionary Rust-based operating system"
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "micronos"
+path = "src/main.rs"
+
+[lib]
+name = "micronos_lib"
+path = "src/lib.rs"
+
+[dependencies]
+micronos-core = { path = "../crates/micronos-core" }
+micronos-kernel = { path = "../crates/micronos-kernel" }
+micronos-net = { path = "../crates/micronos-net" }
+micronos-fs = { path = "../crates/micronos-fs" }
+micronos-services = { path = "../crates/micronos-services" }
+micronos-drivers = { path = "../crates/micronos-drivers" }
+spin.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+trybuild = "1"
+tempfile = "3"

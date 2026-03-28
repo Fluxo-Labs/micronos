@@ -1,0 +1,20 @@
+# Build artifacts
+/target/
+D:/os/micronos/target/
+
+# Cargo home (if moved to external SSD)
+/cargo_home/
+D:/cargo_home/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

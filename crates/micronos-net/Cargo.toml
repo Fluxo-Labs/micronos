@@ -1,0 +1,20 @@
+[package]
+name = "micronos-net"
+version.workspace = true
+authors.workspace = true
+description = "Networking subsystem for MicronOS"
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["std"]
+std = []
+no_std = []
+
+[dependencies]
+micronos-core = { path = "../micronos-core" }
+spin.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true

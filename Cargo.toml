@@ -1,0 +1,46 @@
+[workspace]
+members = [
+    "crates/micronos-core",
+    "crates/micronos-kernel",
+    "crates/micronos-net",
+    "crates/micronos-fs",
+    "crates/micronos-services",
+    "crates/micronos-drivers",
+    "micronos-bin",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+authors = ["AI System <ai@example.com>"]
+description = "Based on an original idea by alisio85"
+license = "MIT"
+edition = "2024"
+rust-version = "1.85"
+
+[workspace.dependencies]
+fluxo-typestate = "0.1"
+micronet-antenna = "0.1"
+os_foundry_suite = "0.1"
+os_kernel_foundry = "0.1"
+ostd = "0.17"
+state-shift = "2.1"
+tracing = "0.1"
+serde = "1"
+thiserror = "2"
+anyhow = "1"
+tokio = "1"
+libp2p = "0.55"
+spin = "0.9"
+heapless = "0.8"
+tempfile = "3"
+trybuild = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[profile.dev]
+opt-level = 0
+debug = true

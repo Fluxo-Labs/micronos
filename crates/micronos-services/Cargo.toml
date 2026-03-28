@@ -1,0 +1,19 @@
+[package]
+name = "micronos-services"
+version.workspace = true
+authors.workspace = true
+description = "System services for MicronOS"
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["std"]
+std = []
+no_std = []
+
+[dependencies]
+micronos-core = { path = "../micronos-core" }
+
+[dev-dependencies]
+tokio.workspace = true

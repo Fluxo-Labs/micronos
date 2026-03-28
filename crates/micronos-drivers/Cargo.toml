@@ -1,0 +1,13 @@
+[package]
+name = "micronos-drivers"
+version.workspace = true
+authors.workspace = true
+edition = "2024"
+description = "Device driver framework for MicronOS"
+
+[dependencies]
+micronos-core = { path = "../micronos-core" }
+spin = "0.9"
+
+[features]
+default = []
