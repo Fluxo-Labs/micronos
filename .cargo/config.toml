@@ -1,9 +1,4 @@
 # MicronOS Build Configuration
-# All build artifacts on external SSD (D:)
-
-[build]
-# Target directory on external SSD
-target-dir = "D:/os/micronos/target"
 
 [profile.dev]
 opt-level = 0
