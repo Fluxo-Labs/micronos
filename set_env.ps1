@@ -1,20 +1,31 @@
 # MicronOS Build Environment Setup
-# Run this BEFORE building to use external SSD (D:)
+# Esegui QUESTO PRIMA di ogni cargo build/test
+# Metti questo nel tuo PowerShell profile per non doverlo eseguire ogni volta
 
+# Tutto su D: (SSD esterno)
+$env:CARGO_HOME = "D:\cargo_home"
 $env:CARGO_TARGET_DIR = "D:\os\micronos\target"
 
-# Create directory if it doesn't exist
-if (!(Test-Path "D:\os\micronos\target")) { 
-    New-Item -ItemType Directory -Path "D:\os\micronos\target" | Out-Null 
+# Crea directory se non esistono
+if (!(Test-Path "D:\cargo_home")) { 
+    New-Item -ItemType Directory -Path "D:\cargo_home" -Force | Out-Null 
 }
+if (!(Test-Path "D:\os\micronos\target")) { 
+    New-Item -ItemType Directory -Path "D:\os\micronos\target" -Force | Out-Null 
+}
+
+# Per non usare mai ~/.cargo su C:
+$env:RUSTUP_HOME = "D:\cargo_home"
 
 Write-Host ""
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host " MicronOS Build Environment" -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
+Write-Host "CARGO_HOME:       $env:CARGO_HOME" -ForegroundColor Yellow
 Write-Host "CARGO_TARGET_DIR: $env:CARGO_TARGET_DIR" -ForegroundColor Yellow
+Write-Host "RUSTUP_HOME:      $env:RUSTUP_HOME" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "Build artifacts on D: (SSD esterno)" -ForegroundColor Green
-Write-Host "C: (HDD primario) NON usato per build" -ForegroundColor Green
+Write-Host "TUTTO su D: (SSD esterno)" -ForegroundColor Green
+Write-Host "C: (HDD) NON toccato" -ForegroundColor Green
 Write-Host ""

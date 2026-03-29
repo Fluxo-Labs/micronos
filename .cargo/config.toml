@@ -1,4 +1,8 @@
 # MicronOS Build Configuration
+# Tutto su D: (SSD esterno) - NON tocca C:
+
+[build]
+target-dir = "D:/os/micronos/target"
 
 [profile.dev]
 opt-level = 0

@@ -414,23 +414,66 @@ fn handle_events_command(os: &MicronOS, args: &str) {
                 println!("Available sources: kernel, process, driver, network, timer");
             }
         }
+        Some("since") => {
+            if parts.len() > 1 {
+                if let Ok(ts) = parts[1].parse::<u64>() {
+                    print_events_since(os, ts);
+                } else {
+                    println!("Invalid timestamp: {}", parts[1]);
+                }
+            } else {
+                println!("Usage: events since <timestamp>");
+                println!("Show events at or after the specified timestamp (ms)");
+            }
+        }
+        Some("until") => {
+            if parts.len() > 1 {
+                if let Ok(ts) = parts[1].parse::<u64>() {
+                    print_events_until(os, ts);
+                } else {
+                    println!("Invalid timestamp: {}", parts[1]);
+                }
+            } else {
+                println!("Usage: events until <timestamp>");
+                println!("Show events at or before the specified timestamp (ms)");
+            }
+        }
+        Some("between") => {
+            if parts.len() > 2 {
+                if let (Ok(start), Ok(end)) = (parts[1].parse::<u64>(), parts[2].parse::<u64>()) {
+                    print_events_between(os, start, end);
+                } else {
+                    println!("Invalid timestamps: {} {}", parts[1], parts[2]);
+                }
+            } else {
+                println!("Usage: events between <start> <end>");
+                println!("Show events within the time range [start, end] (ms)");
+            }
+        }
         Some("export") => {
             print_events_export(os);
         }
         Some("help") => {
             println!("Events commands:");
-            println!("  events list     - Show event history");
-            println!("  events stats    - Show event statistics");
-            println!("  events rate     - Show event rate");
+            println!("  events list       - Show event history");
+            println!("  events stats      - Show event statistics");
+            println!("  events rate       - Show event rate");
+            println!("  events timeline   - Show event timeline");
             println!(
-                "  events filter   - Filter by type (process|timer|network|memory|disk|signal)"
+                "  events filter     - Filter by type (process|timer|network|memory|disk|signal)"
             );
-            println!("  events by       - Filter by source (kernel|process|driver|network|timer)");
-            println!("  events export   - Export events (CSV format)");
-            println!("  events clear    - Clear event history");
+            println!("  events by         - Filter by source (kernel|process|driver|network|timer)");
+            println!("  events since      - Events at/after timestamp (events since <ms>)");
+            println!("  events until      - Events at/before timestamp (events until <ms>)");
+            println!("  events between    - Events in range (events between <start> <end>)");
+            println!("  events export     - Export events (CSV format)");
+            println!("  events clear      - Clear event history");
         }
         Some("rate") => {
             print_events_rate(os);
+        }
+        Some("timeline") => {
+            print_events_timeline(os);
         }
         _ => {
             print_events(os);
@@ -646,6 +689,205 @@ fn print_events_by_source(os: &MicronOS, source: &str) {
     println!("╚════════════════════════════════════════════════════════════════╝");
 }
 
+fn print_events_since(os: &MicronOS, timestamp: u64) {
+    use micronos_kernel::events::{EventSource, EventType};
+
+    let filtered = os.event_bus.history_since(timestamp);
+    let history = os.event_bus.history();
+
+    let min_ts = history.first().map(|e| e.timestamp).unwrap_or(0);
+    let max_ts = history.last().map(|e| e.timestamp).unwrap_or(0);
+
+    println!(
+        "
+╔════════════════════════════════════════════════════════════════╗
+║  Events since {} ms                                     ║
+╠════════════════════════════════════════════════════════════════╣
+║  Time range: {} - {} ms                                  ║
+║  Matching events: {:>4}                                      ║",
+        timestamp,
+        min_ts,
+        max_ts,
+        filtered.len()
+    );
+
+    if filtered.is_empty() {
+        println!("║                                                              ║");
+        println!("║  (No events at or after {})                              ║", timestamp);
+    } else {
+        println!("╠════════════════════════════════════════════════════════════════╣");
+        println!("║  ID     │ Type                      │ Source │ Timestamp     ║");
+        println!("╠════════════════════════════════════════════════════════════════╣");
+
+        for event in filtered.iter().rev().take(10) {
+            let type_name = match event.event_type {
+                EventType::ProcessCreated => "ProcessCreated",
+                EventType::ProcessTerminated => "ProcessTerminated",
+                EventType::ProcessSuspended => "ProcessSuspended",
+                EventType::ProcessResumed => "ProcessResumed",
+                EventType::TimerExpired => "TimerExpired",
+                EventType::SignalReceived => "SignalReceived",
+                EventType::NetworkConnected => "NetworkConnected",
+                EventType::NetworkDisconnected => "NetworkDisconnected",
+                EventType::DiskRead => "DiskRead",
+                EventType::DiskWrite => "DiskWrite",
+                EventType::MemoryAllocated => "MemoryAllocated",
+                EventType::MemoryFreed => "MemoryFreed",
+                EventType::Custom(_) => "Custom",
+            };
+
+            let source_name = match event.source {
+                EventSource::Kernel => "Kernel",
+                EventSource::Process(_) => "Process",
+                EventSource::Driver(_) => "Driver",
+                EventSource::Network => "Network",
+                EventSource::Timer => "Timer",
+                EventSource::Custom(_) => "Custom",
+            };
+
+            println!(
+                "║  {:>6} │ {:<24} │ {:<6} │ {:>10} ms    ║",
+                event.id, type_name, source_name, event.timestamp
+            );
+        }
+    }
+    println!("╚════════════════════════════════════════════════════════════════╝");
+}
+
+fn print_events_until(os: &MicronOS, timestamp: u64) {
+    use micronos_kernel::events::{EventSource, EventType};
+
+    let filtered = os.event_bus.history_until(timestamp);
+    let history = os.event_bus.history();
+
+    let min_ts = history.first().map(|e| e.timestamp).unwrap_or(0);
+    let max_ts = history.last().map(|e| e.timestamp).unwrap_or(0);
+
+    println!(
+        "
+╔════════════════════════════════════════════════════════════════╗
+║  Events until {} ms                                     ║
+╠════════════════════════════════════════════════════════════════╣
+║  Time range: {} - {} ms                                  ║
+║  Matching events: {:>4}                                      ║",
+        timestamp,
+        min_ts,
+        max_ts,
+        filtered.len()
+    );
+
+    if filtered.is_empty() {
+        println!("║                                                              ║");
+        println!("║  (No events at or before {})                             ║", timestamp);
+    } else {
+        println!("╠════════════════════════════════════════════════════════════════╣");
+        println!("║  ID     │ Type                      │ Source │ Timestamp     ║");
+        println!("╠════════════════════════════════════════════════════════════════╣");
+
+        for event in filtered.iter().take(10) {
+            let type_name = match event.event_type {
+                EventType::ProcessCreated => "ProcessCreated",
+                EventType::ProcessTerminated => "ProcessTerminated",
+                EventType::ProcessSuspended => "ProcessSuspended",
+                EventType::ProcessResumed => "ProcessResumed",
+                EventType::TimerExpired => "TimerExpired",
+                EventType::SignalReceived => "SignalReceived",
+                EventType::NetworkConnected => "NetworkConnected",
+                EventType::NetworkDisconnected => "NetworkDisconnected",
+                EventType::DiskRead => "DiskRead",
+                EventType::DiskWrite => "DiskWrite",
+                EventType::MemoryAllocated => "MemoryAllocated",
+                EventType::MemoryFreed => "MemoryFreed",
+                EventType::Custom(_) => "Custom",
+            };
+
+            let source_name = match event.source {
+                EventSource::Kernel => "Kernel",
+                EventSource::Process(_) => "Process",
+                EventSource::Driver(_) => "Driver",
+                EventSource::Network => "Network",
+                EventSource::Timer => "Timer",
+                EventSource::Custom(_) => "Custom",
+            };
+
+            println!(
+                "║  {:>6} │ {:<24} │ {:<6} │ {:>10} ms    ║",
+                event.id, type_name, source_name, event.timestamp
+            );
+        }
+    }
+    println!("╚════════════════════════════════════════════════════════════════╝");
+}
+
+fn print_events_between(os: &MicronOS, start: u64, end: u64) {
+    use micronos_kernel::events::{EventSource, EventType};
+
+    let filtered = os.event_bus.history_by_time_range(start, end);
+    let history = os.event_bus.history();
+
+    let min_ts = history.first().map(|e| e.timestamp).unwrap_or(0);
+    let max_ts = history.last().map(|e| e.timestamp).unwrap_or(0);
+
+    let start_str = if start <= min_ts { "...".to_string() } else { start.to_string() };
+    let end_str = if end >= max_ts { "...".to_string() } else { end.to_string() };
+
+    println!(
+        "
+╔════════════════════════════════════════════════════════════════╗
+║  Events between {} - {} ms                              ║
+╠════════════════════════════════════════════════════════════════╣
+║  Time range: {} - {} ms                                  ║
+║  Matching events: {:>4}                                      ║",
+        start_str,
+        end_str,
+        min_ts,
+        max_ts,
+        filtered.len()
+    );
+
+    if filtered.is_empty() {
+        println!("║                                                              ║");
+        println!("║  (No events in range [{}, {}])                           ║", start, end);
+    } else {
+        println!("╠════════════════════════════════════════════════════════════════╣");
+        println!("║  ID     │ Type                      │ Source │ Timestamp     ║");
+        println!("╠════════════════════════════════════════════════════════════════╣");
+
+        for event in filtered.iter().take(10) {
+            let type_name = match event.event_type {
+                EventType::ProcessCreated => "ProcessCreated",
+                EventType::ProcessTerminated => "ProcessTerminated",
+                EventType::ProcessSuspended => "ProcessSuspended",
+                EventType::ProcessResumed => "ProcessResumed",
+                EventType::TimerExpired => "TimerExpired",
+                EventType::SignalReceived => "SignalReceived",
+                EventType::NetworkConnected => "NetworkConnected",
+                EventType::NetworkDisconnected => "NetworkDisconnected",
+                EventType::DiskRead => "DiskRead",
+                EventType::DiskWrite => "DiskWrite",
+                EventType::MemoryAllocated => "MemoryAllocated",
+                EventType::MemoryFreed => "MemoryFreed",
+                EventType::Custom(_) => "Custom",
+            };
+
+            let source_name = match event.source {
+                EventSource::Kernel => "Kernel",
+                EventSource::Process(_) => "Process",
+                EventSource::Driver(_) => "Driver",
+                EventSource::Network => "Network",
+                EventSource::Timer => "Timer",
+                EventSource::Custom(_) => "Custom",
+            };
+
+            println!(
+                "║  {:>6} │ {:<24} │ {:<6} │ {:>10} ms    ║",
+                event.id, type_name, source_name, event.timestamp
+            );
+        }
+    }
+    println!("╚════════════════════════════════════════════════════════════════╝");
+}
+
 fn print_events_rate(os: &MicronOS) {
     use micronos_kernel::events::EventType;
 
@@ -724,6 +966,74 @@ fn print_events_rate(os: &MicronOS) {
         println!("║  {:<14} {:>4}  {}   ║", type_name, count, bar);
     }
 
+    println!("╚════════════════════════════════════════════════════════════════╝");
+}
+
+fn print_events_timeline(os: &MicronOS) {
+    use micronos_kernel::events::EventType;
+
+    let history = os.event_bus.history();
+
+    if history.is_empty() {
+        println!(
+            "
+╔════════════════════════════════════════════════════════════════╗
+║                    Event Timeline                          ║
+╠════════════════════════════════════════════════════════════════╣
+║  No events recorded.                                       ║
+╚════════════════════════════════════════════════════════════════╝"
+        );
+        return;
+    }
+
+    let min_ts = history.iter().map(|e| e.timestamp).min().unwrap_or(0);
+    let max_ts = history.iter().map(|e| e.timestamp).max().unwrap_or(0);
+
+    println!(
+        "
+╔════════════════════════════════════════════════════════════════╗
+║                    Event Timeline                          ║
+╠════════════════════════════════════════════════════════════════╣"
+    );
+
+    let events: Vec<_> = history.iter().take(20).collect();
+
+    for (idx, event) in events.iter().enumerate() {
+        let type_char = match event.event_type {
+            EventType::ProcessCreated => "+",
+            EventType::ProcessTerminated => "-",
+            EventType::ProcessSuspended => "s",
+            EventType::ProcessResumed => "r",
+            EventType::TimerExpired => "T",
+            EventType::SignalReceived => "!",
+            EventType::NetworkConnected => "C",
+            EventType::NetworkDisconnected => "D",
+            EventType::DiskRead => "R",
+            EventType::DiskWrite => "W",
+            EventType::MemoryAllocated => "A",
+            EventType::MemoryFreed => "F",
+            EventType::Custom(_) => "?",
+        };
+
+        println!(
+            "║ {:>3}: [{:>6} ms] {}                                   ║",
+            idx + 1,
+            event.timestamp,
+            type_char
+        );
+    }
+
+    println!("╠════════════════════════════════════════════════════════════════╣");
+    println!("║  Legend: +Created -Terminated sSuspended rResumed         ║");
+    println!("║          TTimer !Signal CConnected DDisconnected              ║");
+    println!("║          RRead WWrite AAlloc FFree ?Custom                   ║");
+    println!("╠════════════════════════════════════════════════════════════════╣");
+    println!(
+        "║  Total events: {:>4}  |  Time range: {} - {} ms       ║",
+        history.len(),
+        min_ts,
+        max_ts
+    );
     println!("╚════════════════════════════════════════════════════════════════╝");
 }
 
