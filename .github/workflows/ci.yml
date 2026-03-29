@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+        
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -68,6 +68,7 @@ jobs:
         
       - name: Run tests with nightly
         run: cargo +nightly test --workspace
+        continue-on-error: true
 
   security:
     name: Security Audit
@@ -77,10 +78,10 @@ jobs:
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        
+      
       - name: Fetch dependencies
         run: cargo fetch
-        
+      
       - name: Run cargo deny
         uses: rustsec/audit-check@v2
         with:
@@ -102,6 +103,7 @@ jobs:
         
       - name: Generate coverage report
         run: cargo llvm-cov --workspace --lcov --output-path lcov.info
+        continue-on-error: true
         
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

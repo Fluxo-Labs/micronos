@@ -719,7 +719,7 @@ fn print_events_rate(os: &MicronOS) {
     );
 
     for (type_name, count) in type_counts.iter().take(6) {
-        let bar_len = (*count as usize).min(20);
+        let bar_len = (*count).min(20);
         let bar: String = "█".repeat(bar_len);
         println!("║  {:<14} {:>4}  {}   ║", type_name, count, bar);
     }
